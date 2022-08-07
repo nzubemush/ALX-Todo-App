@@ -12,5 +12,9 @@
         <li>{{d.description}}</li>
         {% endfor %}
     </ul>
+    <form action="/todos/create" method="post">
+        <input type="text" name="description">
+        <input type="submit" value="create">
+    </form>
 </body>
 </html>
