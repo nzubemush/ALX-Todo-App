@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from distutils.log import error
+from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 import sys
 
@@ -24,13 +25,38 @@ db.create_all()
 
 @app.route('/todos/create', methods=['POST'])
 def create_todo():
-    description = request.get_json()['description']
-    todo = Todo(description=description)
-    db.session.add(todo)
-    db.session.commit()
-    return jsonify ({
-        'description': todo.description
-    })
+    error = False
+    body = {}
+    try:
+        description = request.get_json()['description']
+        todo = Todo(description=description)
+        db.session.add(todo)
+        db.session.commit()
+        body['description'] = todo.description
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info())
+    finally:
+        db.session.close()
+    if error == True:
+        abort (404)
+    else:
+        return jsonify(body)
+
+
+@app.route('/todos/<todo_id>/set-completed', methods=['POST'])
+def set_completed_todo(todo_id):
+    try:
+        completed = request.get_json()['completed']
+        todo = Todo.query.get(todo_id)
+        todo.completed = completed
+        db.session.commit()
+    except:
+        db.session.rollback()
+    finally:
+        db.session.close()
+    return redirect('index')
 
 
 @app.route('/')
